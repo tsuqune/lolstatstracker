@@ -56,19 +56,6 @@ interface RiotApiService {
         @Header("X-Riot-Token") apiKey: String
     ): List<LeagueEntryResponse>
 
-//    @GET("lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top")
-//    suspend fun getTopChampionMasteries(
-//        @Path("puuid") puuid: String,
-//        @Query("count") count: Int = 3,
-//        @Header("X-Riot-Token") apiKey: String
-//    ): List<ChampionMasteryResponse>
-//
-//    @GET("cdn/{version}/data/{language}/champion.json")
-//    suspend fun getChampionData(
-//        @Path("version") version: String,
-//        @Path("language") language: String = "en_US"
-//    ): ChampionDataResponse
-
     companion object {
         val accountInstance: RiotApiService by lazy {
             accountRetrofit.create(RiotApiService::class.java)

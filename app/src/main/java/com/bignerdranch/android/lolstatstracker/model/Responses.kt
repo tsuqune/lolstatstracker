@@ -22,29 +22,3 @@ data class LeagueEntryResponse(
     val wins: Int,
     val losses: Int
 )
-
-//data class ChampionMasteryResponse(
-//    val championId: Int,
-//    val championLevel: Int,
-//    val championPoints: Int,
-//    val lastPlayTime: Long,
-//    val championPointsSinceLastLevel: Int,
-//    val championPointsUntilNextLevel: Int,
-//    val chestGranted: Boolean,
-//    val tokensEarned: Int,
-//    val summonerId: String
-//)
-//
-//data class ChampionDataResponse(
-//    val data: Map<String, ChampionDetails>
-//)
-//
-//data class ChampionDetails(
-//    val key: String, // ID чемпиона
-//    val name: String,
-//    val image: ChampionImage
-//)
-//
-//data class ChampionImage(
-//    val full: String
-//)

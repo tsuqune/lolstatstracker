@@ -9,8 +9,7 @@ object Constants {
     // Для Summoner и League API (региональный)
     const val REGIONAL_BASE_URL = "https://ru.api.riotgames.com/" // Для RU региона
 
-//    const val DDRAGON_BASE_URL = "https://ddragon.leagueoflegends.com/cdn/"
-//    const val DDRAGON_VERSION = "15.7.1"
-//    const val DDRAGON_CHAMPION_JSON = "${DDRAGON_BASE_URL}15.7.1/data/en_US/champion.json"
+    const val DDRAGON_BASE_URL = "https://ddragon.leagueoflegends.com/cdn/"
+
 
 }
