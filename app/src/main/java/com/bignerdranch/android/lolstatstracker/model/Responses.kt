@@ -9,7 +9,7 @@ data class RiotAccountResponse(
 data class SummonerResponse(
     val id: String,
     val puuid: String,
-    val name: String?,
+
     val summonerLevel: Int,
     val profileIconId: Int
 )

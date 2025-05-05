@@ -14,35 +14,41 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
-private const val TAG = "PlayerViewModel"
+private const val TAG = "PlayerViewModel" // Тег для логов
 
+// ViewModel для работы с данными игрока
 class PlayerViewModel : ViewModel() {
+    // Поток данных игрока (MutableStateFlow для внутреннего использования)
     private val _playerData = MutableStateFlow<PlayerData?>(null)
+    // Публичная версия потока данных игрока (только для чтения)
     val playerData: StateFlow<PlayerData?> = _playerData
 
+    // Поток состояния загрузки
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    // Поток ошибок
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    // Основная функция для получения данных игрока
     fun fetchPlayerData(gameName: String, tagLine: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
+        viewModelScope.launch { // Запуск корутины в scope ViewModel
+            _isLoading.value = true // Устанавливаем состояние загрузки
+            _error.value = null // Сбрасываем ошибки
 
             Log.d(TAG, "═══════════════════════════════════════")
             Log.d(TAG, "Starting fetch for: $gameName#$tagLine")
 
             try {
-                // 1. Получаем аккаунт (континентальный API)
+                // Шаг 1: Получение аккаунта через континентальный API
                 Log.d(TAG, "Step 1: Fetching account by Riot ID...")
                 val account = try {
                     RiotApiService.accountInstance.getAccountByRiotId(
                         gameName = gameName,
                         tagLine = tagLine,
                         apiKey = Constants.RIOT_API_KEY
-                    ).also {
+                    ).also { // Логируем полученные данные
                         logAccountResponse(it)
                     }
                 } catch (e: Exception) {
@@ -50,7 +56,7 @@ class PlayerViewModel : ViewModel() {
                     throw Exception("Failed to get account: ${e.message}")
                 }
 
-                // 2. Получаем summoner (региональный API)
+                // Шаг 2: Получение summoner через региональный API (по PUUID)
                 Log.d(TAG, "Step 2: Fetching summoner by PUUID...")
                 val summoner = try {
                     RiotApiService.regionalInstance.getSummonerByPuuid(
@@ -64,7 +70,7 @@ class PlayerViewModel : ViewModel() {
                     throw Exception("Failed to get summoner: ${e.message}")
                 }
 
-                // 3. Получаем ранговую статистику (региональный API)
+                // Шаг 3: Получение ранговой статистики через региональный API
                 Log.d(TAG, "Step 3: Fetching league entries...")
                 val leagueEntries = try {
                     RiotApiService.regionalInstance.getLeagueEntries(
@@ -78,12 +84,14 @@ class PlayerViewModel : ViewModel() {
                     throw Exception("Failed to get league data: ${e.message}")
                 }
 
-                // 4. Обрабатываем данные
+                // Шаг 4: Обработка и преобразование данных
                 Log.d(TAG, "Step 4: Processing data...")
+                // Находим данные для одиночной очереди (SOLO)
                 val soloQueue = leagueEntries.find { it.queueType == "RANKED_SOLO_5x5" }
 
+                // Создаем объект PlayerData с преобразованными данными
                 val processedData = PlayerData(
-                    summonerName = summoner.name ?: account.gameName,
+                    summonerName = account.gameName,
                     summonerLevel = summoner.summonerLevel,
                     profileIconId = summoner.profileIconId,
                     rank = soloQueue?.rank,
@@ -91,21 +99,23 @@ class PlayerViewModel : ViewModel() {
                     leaguePoints = soloQueue?.leaguePoints,
                     wins = soloQueue?.wins,
                     losses = soloQueue?.losses,
-                    winRate = soloQueue?.let {
+                    winRate = soloQueue?.let { // Рассчитываем процент побед
                         (it.wins.toDouble() / (it.wins + it.losses)) * 100
                     }
                 ).also {
                     Log.d(TAG, "Processed player data: $it")
                 }
 
-                _playerData.value = processedData
+                _playerData.value = processedData // Обновляем данные игрока
                 Log.d(TAG, "✔ Successfully fetched all data")
 
             } catch (e: UnknownHostException) {
+                // Обработка ошибки отсутствия интернета
                 val errorMsg = "No internet connection"
                 Log.e(TAG, errorMsg, e)
                 _error.value = errorMsg
             } catch (e: Exception) {
+                // Обработка различных HTTP ошибок
                 val errorMsg = when {
                     e.message?.contains("HTTP 401") == true -> "Invalid API key"
                     e.message?.contains("HTTP 403") == true -> "Access denied. Check API key permissions"
@@ -116,12 +126,13 @@ class PlayerViewModel : ViewModel() {
                 Log.e(TAG, errorMsg, e)
                 _error.value = errorMsg
             } finally {
-                _isLoading.value = false
+                _isLoading.value = false // Завершаем загрузку в любом случае
                 Log.d(TAG, "═══════════════════════════════════════\n")
             }
         }
     }
 
+    // Вспомогательная функция для логирования данных аккаунта
     private fun logAccountResponse(response: RiotAccountResponse) {
         Log.d(TAG, """
             |Account response:
@@ -131,16 +142,17 @@ class PlayerViewModel : ViewModel() {
         """.trimMargin())
     }
 
+    // Вспомогательная функция для логирования данных summoner
     private fun logSummonerResponse(response: SummonerResponse) {
         Log.d(TAG, """
             |Summoner response:
             |ID: ${response.id}
-            |Name: ${response.name}
             |Level: ${response.summonerLevel}
             |IconID: ${response.profileIconId}
         """.trimMargin())
     }
 
+    // Вспомогательная функция для логирования данных ранговой статистики
     private fun logLeagueEntries(entries: List<LeagueEntryResponse>) {
         Log.d(TAG, "League entries (${entries.size}):")
         entries.forEachIndexed { i, entry ->
