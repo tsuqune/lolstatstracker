@@ -4,89 +4,61 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bignerdranch.android.lolstatstracker.Constants
-import com.bignerdranch.android.lolstatstracker.model.LeagueEntryResponse
-import com.bignerdranch.android.lolstatstracker.model.PlayerData
-import com.bignerdranch.android.lolstatstracker.model.RiotAccountResponse
-import com.bignerdranch.android.lolstatstracker.model.SummonerResponse
+import com.bignerdranch.android.lolstatstracker.model.*
 import com.bignerdranch.android.lolstatstracker.network.RiotApiService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
+import java.util.Date
 
-private const val TAG = "PlayerViewModel" // Тег для логов
+private const val TAG = "PlayerViewModel"
 
-// ViewModel для работы с данными игрока
 class PlayerViewModel : ViewModel() {
-    // Поток данных игрока (MutableStateFlow для внутреннего использования)
     private val _playerData = MutableStateFlow<PlayerData?>(null)
-    // Публичная версия потока данных игрока (только для чтения)
     val playerData: StateFlow<PlayerData?> = _playerData
 
-    // Поток состояния загрузки
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Поток ошибок
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    // Основная функция для получения данных игрока
     fun fetchPlayerData(gameName: String, tagLine: String) {
-        viewModelScope.launch { // Запуск корутины в scope ViewModel
-            _isLoading.value = true // Устанавливаем состояние загрузки
-            _error.value = null // Сбрасываем ошибки
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
 
             Log.d(TAG, "═══════════════════════════════════════")
             Log.d(TAG, "Starting fetch for: $gameName#$tagLine")
 
             try {
-                // Шаг 1: Получение аккаунта через континентальный API
-                Log.d(TAG, "Step 1: Fetching account by Riot ID...")
-                val account = try {
-                    RiotApiService.accountInstance.getAccountByRiotId(
-                        gameName = gameName,
-                        tagLine = tagLine,
-                        apiKey = Constants.RIOT_API_KEY
-                    ).also { // Логируем полученные данные
-                        logAccountResponse(it)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Account fetch failed", e)
-                    throw Exception("Failed to get account: ${e.message}")
-                }
+                // Шаг 1: Получение аккаунта
+                Log.d(TAG, "Step 1: Fetching account...")
+                val account = RiotApiService.accountInstance.getAccountByRiotId(
+                    gameName, tagLine, Constants.RIOT_API_KEY
+                ).also { logAccountResponse(it) }
 
-                // Шаг 2: Получение summoner через региональный API (по PUUID)
-                Log.d(TAG, "Step 2: Fetching summoner by PUUID...")
-                val summoner = try {
-                    RiotApiService.regionalInstance.getSummonerByPuuid(
-                        puuid = account.puuid,
-                        apiKey = Constants.RIOT_API_KEY
-                    ).also {
-                        logSummonerResponse(it)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Summoner fetch failed", e)
-                    throw Exception("Failed to get summoner: ${e.message}")
-                }
+                // Шаг 2: Получение summoner
+                Log.d(TAG, "Step 2: Fetching summoner...")
+                val summoner = RiotApiService.regionalInstance.getSummonerByPuuid(
+                    account.puuid, Constants.RIOT_API_KEY
+                ).also { logSummonerResponse(it) }
 
-                // Шаг 3: Получение ранговой статистики через региональный API
+                // Шаг 3: Получение ранговой статистики
                 Log.d(TAG, "Step 3: Fetching league entries...")
-                val leagueEntries = try {
-                    RiotApiService.regionalInstance.getLeagueEntries(
-                        summonerId = summoner.id,
-                        apiKey = Constants.RIOT_API_KEY
-                    ).also {
-                        logLeagueEntries(it)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "League entries fetch failed", e)
-                    throw Exception("Failed to get league data: ${e.message}")
-                }
+                val leagueEntries = RiotApiService.regionalInstance.getLeagueEntries(
+                    summoner.id, Constants.RIOT_API_KEY
+                ).also { logLeagueEntries(it) }
 
-                // Шаг 4: Обработка и преобразование данных
-                Log.d(TAG, "Step 4: Processing data...")
-                // Находим данные для одиночной очереди (SOLO)
+                // Шаг 4: Получение мастерства чемпионов
+                Log.d(TAG, "Step 4: Fetching champion masteries...")
+                val championMasteries = RiotApiService.regionalInstance.getChampionMasteries(
+                    account.puuid, Constants.RIOT_API_KEY
+                ).also { logChampionMasteries(it) }
+
+                // Обработка данных
+                Log.d(TAG, "Step 5: Processing data...")
                 val soloQueue = leagueEntries.find { it.queueType == "RANKED_SOLO_5x5" }
 
                 val topChampions = championMasteries
@@ -133,7 +105,7 @@ class PlayerViewModel : ViewModel() {
                     e
                 )
             } finally {
-                _isLoading.value = false // Завершаем загрузку в любом случае
+                _isLoading.value = false
                 Log.d(TAG, "═══════════════════════════════════════\n")
             }
         }
@@ -147,27 +119,24 @@ class PlayerViewModel : ViewModel() {
     // Логирование
     private fun logAccountResponse(response: RiotAccountResponse) {
         Log.d(TAG, """
-            |Account response:
+            |Account:
             |PUUID: ${response.puuid}
-            |GameName: ${response.gameName}
-            |TagLine: ${response.tagLine}
+            |Name: ${response.gameName}#${response.tagLine}
         """.trimMargin())
     }
 
-    // Вспомогательная функция для логирования данных summoner
     private fun logSummonerResponse(response: SummonerResponse) {
         Log.d(TAG, """
-            |Summoner response:
+            |Summoner:
             |ID: ${response.id}
             |Level: ${response.summonerLevel}
-            |IconID: ${response.profileIconId}
+            |Icon: ${response.profileIconId}
         """.trimMargin())
     }
 
-    // Вспомогательная функция для логирования данных ранговой статистики
     private fun logLeagueEntries(entries: List<LeagueEntryResponse>) {
         Log.d(TAG, "League entries (${entries.size}):")
-        entries.forEachIndexed { i, entry ->
+        entries.forEach {
             Log.d(TAG, """
                 |Queue: ${it.queueType}
                 |Rank: ${it.tier} ${it.rank}
