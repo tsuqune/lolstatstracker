@@ -89,7 +89,18 @@ class PlayerViewModel : ViewModel() {
                 // Находим данные для одиночной очереди (SOLO)
                 val soloQueue = leagueEntries.find { it.queueType == "RANKED_SOLO_5x5" }
 
-                // Создаем объект PlayerData с преобразованными данными
+                val topChampions = championMasteries
+                    .sortedByDescending { it.championPoints }
+                    .take(3)
+                    .map {
+                        ChampionMastery(
+                            championId = it.championId,
+                            championLevel = it.championLevel,
+                            championPoints = it.championPoints,
+                            lastPlayTime = it.lastPlayTime
+                        )
+                    }
+
                 val processedData = PlayerData(
                     summonerName = account.gameName,
                     summonerLevel = summoner.summonerLevel,
@@ -99,32 +110,28 @@ class PlayerViewModel : ViewModel() {
                     leaguePoints = soloQueue?.leaguePoints,
                     wins = soloQueue?.wins,
                     losses = soloQueue?.losses,
-                    winRate = soloQueue?.let { // Рассчитываем процент побед
+                    winRate = soloQueue?.let {
                         (it.wins.toDouble() / (it.wins + it.losses)) * 100
-                    }
-                ).also {
-                    Log.d(TAG, "Processed player data: $it")
-                }
+                    },
+                    topChampions = topChampions
+                ).also { Log.d(TAG, "Processed data: $it") }
 
-                _playerData.value = processedData // Обновляем данные игрока
-                Log.d(TAG, "✔ Successfully fetched all data")
+                _playerData.value = processedData
+                Log.d(TAG, "✔ All data fetched successfully")
 
             } catch (e: UnknownHostException) {
-                // Обработка ошибки отсутствия интернета
-                val errorMsg = "No internet connection"
-                Log.e(TAG, errorMsg, e)
-                _error.value = errorMsg
+                handleError("No internet connection", e)
             } catch (e: Exception) {
-                // Обработка различных HTTP ошибок
-                val errorMsg = when {
-                    e.message?.contains("HTTP 401") == true -> "Invalid API key"
-                    e.message?.contains("HTTP 403") == true -> "Access denied. Check API key permissions"
-                    e.message?.contains("HTTP 404") == true -> "Player not found"
-                    e.message?.contains("HTTP 429") == true -> "Too many requests"
-                    else -> "Error: ${e.message ?: "Unknown error"}"
-                }
-                Log.e(TAG, errorMsg, e)
-                _error.value = errorMsg
+                handleError(
+                    when {
+                        e.message?.contains("HTTP 401") == true -> "Invalid API key"
+                        e.message?.contains("HTTP 403") == true -> "API key denied"
+                        e.message?.contains("HTTP 404") == true -> "Player not found"
+                        e.message?.contains("HTTP 429") == true -> "Too many requests"
+                        else -> "Error: ${e.message ?: "Unknown"}"
+                    },
+                    e
+                )
             } finally {
                 _isLoading.value = false // Завершаем загрузку в любом случае
                 Log.d(TAG, "═══════════════════════════════════════\n")
@@ -132,7 +139,12 @@ class PlayerViewModel : ViewModel() {
         }
     }
 
-    // Вспомогательная функция для логирования данных аккаунта
+    private fun handleError(message: String, e: Exception) {
+        Log.e(TAG, message, e)
+        _error.value = message
+    }
+
+    // Логирование
     private fun logAccountResponse(response: RiotAccountResponse) {
         Log.d(TAG, """
             |Account response:
@@ -157,12 +169,23 @@ class PlayerViewModel : ViewModel() {
         Log.d(TAG, "League entries (${entries.size}):")
         entries.forEachIndexed { i, entry ->
             Log.d(TAG, """
-                |Entry $i:
-                |Queue: ${entry.queueType}
-                |Tier: ${entry.tier}
-                |Rank: ${entry.rank}
-                |LP: ${entry.leaguePoints}
-                |W/L: ${entry.wins}/${entry.losses}
+                |Queue: ${it.queueType}
+                |Rank: ${it.tier} ${it.rank}
+                |LP: ${it.leaguePoints}
+                |W/L: ${it.wins}/${it.losses}
+            """.trimMargin())
+        }
+    }
+
+    private fun logChampionMasteries(masteries: List<ChampionMasteryResponse>) {
+        Log.d(TAG, "Champion masteries (${masteries.size}):")
+        masteries.take(3).forEachIndexed { i, m ->
+            Log.d(TAG, """
+                |Top ${i + 1}:
+                |Champion ID: ${m.championId}
+                |Level: ${m.championLevel}
+                |Points: ${m.championPoints}
+                |Last played: ${Date(m.lastPlayTime)}
             """.trimMargin())
         }
     }
