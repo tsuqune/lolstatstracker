@@ -68,8 +68,7 @@ class PlayerViewModel : ViewModel() {
                         ChampionMastery(
                             championId = it.championId,
                             championLevel = it.championLevel,
-                            championPoints = it.championPoints,
-                            lastPlayTime = it.lastPlayTime
+                            championPoints = it.championPoints
                         )
                     }
 
@@ -154,7 +153,6 @@ class PlayerViewModel : ViewModel() {
                 |Champion ID: ${m.championId}
                 |Level: ${m.championLevel}
                 |Points: ${m.championPoints}
-                |Last played: ${Date(m.lastPlayTime)}
             """.trimMargin())
         }
     }

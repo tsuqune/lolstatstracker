@@ -27,6 +27,5 @@ data class LeagueEntryResponse(
 data class ChampionMasteryResponse(
     val championId: Long,
     val championLevel: Int,
-    val championPoints: Int,
-    val lastPlayTime: Long
+    val championPoints: Int
 )

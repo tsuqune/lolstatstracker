@@ -1,7 +1,7 @@
 package com.bignerdranch.android.lolstatstracker
 
 object Constants {
-    const val RIOT_API_KEY = "RGAPI-897ce084-0d73-4943-9d45-ea92a743d2a1"
+    const val RIOT_API_KEY = "RGAPI-a5651738-d8c5-4f34-adbf-78869bb2377e"
 
     // Для Account API (континентальный)
     const val ACCOUNT_BASE_URL = "https://europe.api.riotgames.com/"
