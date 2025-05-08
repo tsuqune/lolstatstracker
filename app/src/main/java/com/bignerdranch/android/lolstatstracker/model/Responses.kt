@@ -29,3 +29,13 @@ data class ChampionMasteryResponse(
     val championLevel: Int,
     val championPoints: Int
 )
+
+data class DDragonChampionResponse(
+    val data: Map<String, DDragonChampion>
+)
+
+data class DDragonChampion(
+    val key: String,
+    val name: String,
+    val id: String
+)

@@ -36,6 +36,17 @@ private val regionalRetrofit = Retrofit.Builder()
     .addConverterFactory(GsonConverterFactory.create())
     .build()
 
+private val ddragonRetrofit = Retrofit.Builder()
+    .baseUrl(Constants.DDRAGON_BASE_URL)
+    .client(okHttpClient)
+    .addConverterFactory(GsonConverterFactory.create())
+    .build()
+
+interface DDragonService {
+    @GET("data/en_US/champion.json")
+    suspend fun getAllChampions(): DDragonChampionResponse
+}
+
 interface RiotApiService {
     @GET("riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}")
     suspend fun getAccountByRiotId(
@@ -62,6 +73,8 @@ interface RiotApiService {
         @Header("X-Riot-Token") apiKey: String
     ): List<ChampionMasteryResponse>
 
+
+
     companion object {
         val accountInstance: RiotApiService by lazy {
             accountRetrofit.create(RiotApiService::class.java)
@@ -69,6 +82,10 @@ interface RiotApiService {
 
         val regionalInstance: RiotApiService by lazy {
             regionalRetrofit.create(RiotApiService::class.java)
+        }
+
+        val ddragonInstance: DDragonService by lazy {
+            ddragonRetrofit.create(DDragonService::class.java)
         }
     }
 }
