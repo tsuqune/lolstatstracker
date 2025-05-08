@@ -3,6 +3,7 @@ package com.bignerdranch.android.lolstatstracker.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bignerdranch.android.lolstatstracker.ChampionRepository
 import com.bignerdranch.android.lolstatstracker.Constants
 import com.bignerdranch.android.lolstatstracker.model.*
 import com.bignerdranch.android.lolstatstracker.network.RiotApiService
@@ -29,7 +30,7 @@ class PlayerViewModel : ViewModel() {
             _isLoading.value = true
             _error.value = null
 
-            Log.d(TAG, "═══════════════════════════════════════")
+            Log.d(TAG, "============================================================")
             Log.d(TAG, "Starting fetch for: $gameName#$tagLine")
 
             try {
@@ -57,20 +58,24 @@ class PlayerViewModel : ViewModel() {
                     account.puuid, Constants.RIOT_API_KEY
                 ).also { logChampionMasteries(it) }
 
+                val topChampions = championMasteries
+                    .sortedByDescending { it.championPoints }
+                    .take(3)
+                    .map { mastery ->
+                        val name = ChampionRepository.getChampionName(mastery.championId)
+                        ChampionMastery(
+                            championId = mastery.championId,
+                            championLevel = mastery.championLevel,
+                            championPoints = mastery.championPoints,
+                            championName = name
+                        )
+                    }
+
                 // Обработка данных
                 Log.d(TAG, "Step 5: Processing data...")
                 val soloQueue = leagueEntries.find { it.queueType == "RANKED_SOLO_5x5" }
 
-                val topChampions = championMasteries
-                    .sortedByDescending { it.championPoints }
-                    .take(3)
-                    .map {
-                        ChampionMastery(
-                            championId = it.championId,
-                            championLevel = it.championLevel,
-                            championPoints = it.championPoints
-                        )
-                    }
+
 
                 val processedData = PlayerData(
                     summonerName = account.gameName,
@@ -88,7 +93,7 @@ class PlayerViewModel : ViewModel() {
                 ).also { Log.d(TAG, "Processed data: $it") }
 
                 _playerData.value = processedData
-                Log.d(TAG, "✔ All data fetched successfully")
+                Log.d(TAG, "All data fetched successfully")
 
             } catch (e: UnknownHostException) {
                 handleError("No internet connection", e)
@@ -105,7 +110,7 @@ class PlayerViewModel : ViewModel() {
                 )
             } finally {
                 _isLoading.value = false
-                Log.d(TAG, "═══════════════════════════════════════\n")
+                Log.d(TAG, "============================================================\n")
             }
         }
     }
@@ -150,7 +155,7 @@ class PlayerViewModel : ViewModel() {
         masteries.take(3).forEachIndexed { i, m ->
             Log.d(TAG, """
                 |Top ${i + 1}:
-                |Champion ID: ${m.championId}
+                |Champion Key: ${m.championId}
                 |Level: ${m.championLevel}
                 |Points: ${m.championPoints}
             """.trimMargin())
