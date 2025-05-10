@@ -67,13 +67,19 @@ interface RiotApiService {
         @Header("X-Riot-Token") apiKey: String
     ): List<LeagueEntryResponse>
 
-    @GET("/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}")
+    @GET("lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}")
     suspend fun getChampionMasteries(
         @Path("puuid") puuid: String,
         @Header("X-Riot-Token") apiKey: String
     ): List<ChampionMasteryResponse>
 
-
+    @GET("lol/match/v5/matches/by-puuid/{puuid}/ids")
+    suspend fun getRankedMatchIds(
+        @Path("puuid") puuid: String,
+        @Query("count") count: Int,
+        @Query("queue") queue: Int,
+        @Header("X-Riot-Token") apiKey: String
+    ): List<String>
 
     companion object {
         val accountInstance: RiotApiService by lazy {
