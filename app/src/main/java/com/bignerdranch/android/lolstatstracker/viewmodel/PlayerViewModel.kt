@@ -58,24 +58,18 @@ class PlayerViewModel : ViewModel() {
                     account.puuid, Constants.RIOT_API_KEY
                 ).also { logChampionMasteries(it) }
 
-                val topChampions = championMasteries
-                    .sortedByDescending { it.championPoints }
-                    .take(3)
-                    .map { mastery ->
-                        val name = ChampionRepository.getChampionName(mastery.championId)
-                        ChampionMastery(
-                            championId = mastery.championId,
-                            championLevel = mastery.championLevel,
-                            championPoints = mastery.championPoints,
-                            championName = name
-                        )
-                    }
+                // Шаг 5: Получение ID normal матчей
+                Log.d(TAG, "Step 5: Fetching normal match IDs...")
+                val matchIds = RiotApiService.accountInstance.getRankedMatchIds(
+                    puuid = account.puuid,
+                    count = 20,
+                    queue = 430,
+                    apiKey = Constants.RIOT_API_KEY
+                ).also { logMatchIds(it) }
 
-                // Обработка данных
-                Log.d(TAG, "Step 5: Processing data...")
+                // Шаг 6:
+                Log.d(TAG, "Step 6: Processing data...")
                 val soloQueue = leagueEntries.find { it.queueType == "RANKED_SOLO_5x5" }
-
-
 
                 val processedData = PlayerData(
                     summonerName = account.gameName,
@@ -89,7 +83,18 @@ class PlayerViewModel : ViewModel() {
                     winRate = soloQueue?.let {
                         (it.wins.toDouble() / (it.wins + it.losses)) * 100
                     },
-                    topChampions = topChampions
+                    topChampions = championMasteries
+                        .sortedByDescending { it.championPoints }
+                        .take(3)
+                        .map { mastery ->
+                            val name = ChampionRepository.getChampionName(mastery.championId)
+                            ChampionMastery(
+                                championId = mastery.championId,
+                                championLevel = mastery.championLevel,
+                                championPoints = mastery.championPoints,
+                                championName = name
+                            )
+                        }
                 ).also { Log.d(TAG, "Processed data: $it") }
 
                 _playerData.value = processedData
@@ -112,6 +117,13 @@ class PlayerViewModel : ViewModel() {
                 _isLoading.value = false
                 Log.d(TAG, "============================================================\n")
             }
+        }
+    }
+
+    private fun logMatchIds(ids: List<String>) {
+        Log.d(TAG, "Retrieved ${ids.size} ranked match IDs:")
+        ids.forEachIndexed { index, id ->
+            Log.d(TAG, "${index + 1}. $id")
         }
     }
 
