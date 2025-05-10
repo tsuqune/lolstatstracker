@@ -129,10 +129,20 @@ fun PlayerStatsScreen(
             }
 
             playerData!!.winRate?.let {
-                Text("Win Rate: ${"%.1f".format(it)}%")
+                Text("Ranked win Rate: ${"%.1f".format(it)}%")
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            playerData!!.wins?.let{ wins ->
+                playerData!!.losses?.let{ losses ->
+                    Text(
+                        "Ranked W/L: $wins/$losses",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Column(
                 modifier = Modifier
