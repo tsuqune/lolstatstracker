@@ -7,6 +7,8 @@ import com.bignerdranch.android.lolstatstracker.ChampionRepository
 import com.bignerdranch.android.lolstatstracker.Constants
 import com.bignerdranch.android.lolstatstracker.model.*
 import com.bignerdranch.android.lolstatstracker.network.RiotApiService
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +26,9 @@ class PlayerViewModel : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
+
+    private val _matches = MutableStateFlow<List<MatchData>>(emptyList())
+    val matches: StateFlow<List<MatchData>> = _matches
 
     fun fetchPlayerData(gameName: String, tagLine: String) {
         viewModelScope.launch {
@@ -63,9 +68,21 @@ class PlayerViewModel : ViewModel() {
                 val matchIds = RiotApiService.accountInstance.getRankedMatchIds(
                     puuid = account.puuid,
                     count = 20,
-                    queue = 430,
+                    queue = 420,
                     apiKey = Constants.RIOT_API_KEY
                 ).also { logMatchIds(it) }
+
+                val matches = matchIds.map { matchId ->
+                    async {
+                        val response = RiotApiService.accountInstance.getMatchDetails(
+                            matchId,
+                            Constants.RIOT_API_KEY
+                        )
+                        processMatch(response, account.puuid)
+                    }
+                }.awaitAll().filterNotNull()
+
+                _matches.value = matches
 
                 // Шаг 6:
                 Log.d(TAG, "Step 6: Processing data...")
@@ -171,6 +188,20 @@ class PlayerViewModel : ViewModel() {
                 |Level: ${m.championLevel}
                 |Points: ${m.championPoints}
             """.trimMargin())
+        }
+    }
+
+    private fun processMatch(response: MatchDetailsResponse, puuid: String): MatchData? {
+        val participant = response.info.participants.find { it.puuid == puuid }
+        return participant?.let {
+            MatchData(
+                matchId = response.metadata.matchId,
+                championId = it.championId,
+                kills = it.kills,
+                deaths = it.deaths,
+                assists = it.assists,
+                win = it.win
+            )
         }
     }
 }

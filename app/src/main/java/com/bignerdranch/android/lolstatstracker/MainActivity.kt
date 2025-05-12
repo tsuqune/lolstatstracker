@@ -3,6 +3,7 @@ package com.bignerdranch.android.lolstatstracker
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -16,8 +17,13 @@ import coil.compose.AsyncImage
 import com.bignerdranch.android.lolstatstracker.ui.theme.LolstatstrackerTheme
 import com.bignerdranch.android.lolstatstracker.viewmodel.PlayerViewModel
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import com.bignerdranch.android.lolstatstracker.model.MatchData
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,6 +88,7 @@ fun PlayerStatsScreen(
     val playerData by viewModel.playerData.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val matches by viewModel.matches.collectAsState()
 
     Column(
         modifier = Modifier
@@ -200,9 +207,78 @@ fun PlayerStatsScreen(
                     }
                 }
             }
+
+            Text(
+                "Последние матчи:",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(matches) { match ->
+                    MatchCard(match = match)
+                }
+            }
             Button(onClick = onBack) {
                 Text("Назад")
             }
         }
     }
+    
 }
+
+@Composable
+fun MatchCard(match: MatchData) {
+    val backgroundColor = if (match.win) Color(0x8027AE60) else Color(0x80EB5757)
+    var championName by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(match.championId) {
+        championName = ChampionRepository.getChampionName(match.championId)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .background(backgroundColor)
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = championName?.let {
+                    "${Constants.DDRAGON_BASE_URL}img/champion/${it.replace(" ", "")}.png"
+                } ?: "https://via.placeholder.com/64",
+                contentDescription = "Champion",
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column {
+                Text(
+                    text = championName ?: "Загрузка...",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = "KDA: ${match.kills}/${match.deaths}/${match.assists}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = if (match.win) "ПОБЕДА" else "ПОРАЖЕНИЕ",
+                    color = if (match.win) Color(0xFF27AE60) else Color(0xFFEB5757),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+    }
+}
+
