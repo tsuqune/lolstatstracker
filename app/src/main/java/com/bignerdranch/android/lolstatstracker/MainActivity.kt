@@ -3,32 +3,34 @@ package com.bignerdranch.android.lolstatstracker
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.bignerdranch.android.lolstatstracker.model.ChampionMastery
+import com.bignerdranch.android.lolstatstracker.model.MatchData
+import com.bignerdranch.android.lolstatstracker.model.PlayerData
 import com.bignerdranch.android.lolstatstracker.ui.theme.LolstatstrackerTheme
 import com.bignerdranch.android.lolstatstracker.viewmodel.PlayerViewModel
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
-import com.bignerdranch.android.lolstatstracker.model.MatchData
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             LolstatstrackerTheme {
                 var showStatsScreen by remember { mutableStateOf(false) }
@@ -37,49 +39,73 @@ class MainActivity : ComponentActivity() {
                 val viewModel: PlayerViewModel = viewModel()
 
                 if (!showStatsScreen) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        TextField(
-                            value = gameName,
-                            onValueChange = { gameName = it },
-                            label = { Text("Имя игрока") }
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        TextField(
-                            value = tagLine,
-                            onValueChange = { tagLine = it },
-                            label = { Text("Тег (например: RU1)") }
-                        )
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Button(
-                            onClick = {
-                                viewModel.fetchPlayerData(gameName, tagLine)
-                                showStatsScreen = true
-                            },
-                            enabled = gameName.isNotBlank() && tagLine.isNotBlank()
-                        ) {
-                            Text("Поиск")
+                    InputScreen(
+                        gameName = gameName,
+                        tagLine = tagLine,
+                        onGameNameChange = { gameName = it },
+                        onTagLineChange = { tagLine = it },
+                        onSearch = {
+                            viewModel.fetchPlayerData(gameName, tagLine)
+                            showStatsScreen = true
                         }
-                    }
+                    )
                 } else {
-                    PlayerStatsScreen(viewModel) {
-                        showStatsScreen = false
-                    }
+                    PlayerStatsScreen(
+                        viewModel = viewModel,
+                        onBack = { showStatsScreen = false }
+                    )
                 }
             }
         }
     }
 }
 
+@Composable
+private fun InputScreen(
+    gameName: String,
+    tagLine: String,
+    onGameNameChange: (String) -> Unit,
+    onTagLineChange: (String) -> Unit,
+    onSearch: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        OutlinedTextField(
+            value = gameName,
+            onValueChange = onGameNameChange,
+            label = { Text("Имя игрока") },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Введите игровое имя") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = tagLine,
+            onValueChange = onTagLineChange,
+            label = { Text("Игровой тег") },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Например: RU1") }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onSearch,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = gameName.isNotBlank() && tagLine.isNotBlank()
+        ) {
+            Text("Поиск")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerStatsScreen(
     viewModel: PlayerViewModel,
@@ -90,149 +116,179 @@ fun PlayerStatsScreen(
     val error by viewModel.error.collectAsState()
     val matches by viewModel.matches.collectAsState()
 
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Статистика игрока") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when {
+            isLoading -> LoadingScreen()
+            error != null -> ErrorScreen(error!!, onBack)
+            playerData != null -> PlayerContent(
+                playerData = playerData!!,
+                matches = matches,
+                modifier = Modifier.padding(padding)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerContent(
+    playerData: PlayerData,
+    matches: List<MatchData>,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { PlayerHeader(playerData) }
+        item { RankInfo(playerData) }
+        item { TopChampions(playerData.topChampions) }
+        item { MatchListHeader() }
+        items(matches) { MatchCard(match = it) }
+    }
+}
+
+@Composable
+private fun PlayerHeader(playerData: PlayerData) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (isLoading) {
-            CircularProgressIndicator()
-        } else if (error != null) {
-            Text(error!!, color = MaterialTheme.colorScheme.error)
-            Button(onClick = onBack) {
-                Text("Назад")
-            }
-        } else if (playerData != null) {
-            AsyncImage(
-                model = "${Constants.DDRAGON_BASE_URL}img/profileicon/${playerData!!.profileIconId}.png",
-                contentDescription = "Profile Icon",
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-            )
+        AsyncImage(
+            model = "${Constants.DDRAGON_BASE_URL}img/profileicon/${playerData.profileIconId}.png",
+            contentDescription = "Аватар",
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+        )
 
-            Text(playerData!!.summonerName, style = MaterialTheme.typography.headlineMedium)
-            Text("Уровень: ${playerData!!.summonerLevel}")
+        Text(
+            text = playerData.summonerName,
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(top = 8.dp)
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Уровень: ${playerData.summonerLevel}",
+            style = MaterialTheme.typography.bodyMedium)
 
-            val tierLower = playerData!!.tier?.lowercase() ?: "unranked"
-            AsyncImage(
-                model = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/${tierLower}.png",
-                contentDescription = "Rank Icon",
-                modifier = Modifier
-                    .size(70.dp)
-            )
+    }
+}
 
-            playerData!!.tier?.let { tier ->
-                playerData!!.rank?.let { rank ->
-                    Text("Ранг: $tier $rank")
-                }
-            }
+@Composable
+private fun RankInfo(playerData: PlayerData) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val tier = playerData.tier?.lowercase() ?: "unranked"
+        AsyncImage(
+            model = "https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-mini-crests/$tier.png",
+            contentDescription = "Ранг",
+            modifier = Modifier.size(80.dp)
+        )
 
-            playerData!!.leaguePoints.let { leaguePoints ->
-                Text("LP: $leaguePoints")
-            }
+        Spacer(modifier = Modifier.height(8.dp))
 
-            playerData!!.winRate?.let {
-                Text("Ranked win Rate: ${"%.1f".format(it)}%")
-            }
-
-            playerData!!.wins?.let{ wins ->
-                playerData!!.losses?.let{ losses ->
-                    Text(
-                        "Ranked W/L: $wins/$losses",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally // Центрируем всю колонку
-            ) {
-                Text(
-                    "Топ чемпионы:",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.Center, // Центрируем элементы в ряду
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    playerData!!.topChampions.forEach { champion ->
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .width(100.dp) // Немного увеличим ширину для лучшего отображения
-                                .padding(horizontal = 8.dp)
-                        ) {
-                            AsyncImage(
-                                model = "${Constants.DDRAGON_BASE_URL}img/champion/${champion.championName?.replace(" ", "")}.png",
-                                contentDescription = "Champion Image",
-                                modifier = Modifier
-                                    .size(70.dp)
-                                    .clip(CircleShape)
-                            )
-
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
-                                text = champion.championName ?: "Unknown",
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-
-                            Text(
-                                "Ур. ${champion.championLevel}",
-                                style = MaterialTheme.typography.labelSmall
-                            )
-
-                            Text(
-                                "${champion.championPoints} pts",
-                                style = MaterialTheme.typography.labelSmall
-                            )
-                        }
-                    }
-                }
-            }
-
+        playerData.tier?.let { tier ->
             Text(
-                "Последние матчи:",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+                text = tier.replaceFirstChar { it.titlecase() },
+                style = MaterialTheme.typography.titleLarge)
+        }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(matches) { match ->
-                    MatchCard(match = match)
+        Text(
+            text = buildString {
+                playerData.rank?.let { append("$it ") }
+                append("${playerData.leaguePoints} LP")
+            },
+            style = MaterialTheme.typography.bodyLarge)
+
+
+        playerData.winRate?.let { winRate ->
+            Text(
+                text = "Винрейт: ${"%.1f".format(winRate)}%",
+                style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun TopChampions(champions: List<ChampionMastery>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = "Топ чемпионы",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            champions.forEach { champion ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.width(100.dp)
+                ) {
+                    AsyncImage(
+                        model = "${Constants.DDRAGON_BASE_URL}img/champion/${champion.championName?.replace(" ", "")}.png",
+                        contentDescription = "Чемпион",
+                        modifier = Modifier
+                            .size(70.dp)
+                            .clip(CircleShape)
+                    )
+
+                    Text(
+                        text = champion.championName ?: "Unknown",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = "Ур. ${champion.championLevel}",
+                        style = MaterialTheme.typography.labelSmall)
+
                 }
-            }
-            Button(onClick = onBack) {
-                Text("Назад")
             }
         }
     }
-    
+}
+
+@Composable
+private fun MatchListHeader() {
+    Text(
+        text = "Последние матчи",
+        style = MaterialTheme.typography.titleLarge,
+        modifier = Modifier.padding(horizontal = 16.dp)
+    )
 }
 
 @Composable
 fun MatchCard(match: MatchData) {
-    val backgroundColor = if (match.win) Color(0x8027AE60) else Color(0x80EB5757)
+    val backgroundColor = if (match.win) Color(0xFF27AE60) else Color(0xFFEB5757)
+
     var championName by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(match.championId) {
@@ -242,20 +298,19 @@ fun MatchCard(match: MatchData) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        shape = RoundedCornerShape(12.dp)
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
             modifier = Modifier
-                .background(backgroundColor)
-                .padding(12.dp),
+                .padding(12.dp)
+                .height(80.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = championName?.let {
-                    "${Constants.DDRAGON_BASE_URL}img/champion/${it.replace(" ", "")}.png"
-                } ?: "https://via.placeholder.com/64",
-                contentDescription = "Champion",
+                model = "${Constants.DDRAGON_BASE_URL}img/champion/${championName?.replace(" ", "")}.png",
+                contentDescription = "Чемпион",
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
@@ -265,20 +320,49 @@ fun MatchCard(match: MatchData) {
 
             Column {
                 Text(
-                    text = championName ?: "Загрузка...",
-                    style = MaterialTheme.typography.titleSmall
-                )
+                    text = championName ?: "Unknown",
+                    style = MaterialTheme.typography.titleMedium)
+
                 Text(
                     text = "KDA: ${match.kills}/${match.deaths}/${match.assists}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = if (match.win) "ПОБЕДА" else "ПОРАЖЕНИЕ",
-                    color = if (match.win) Color(0xFF27AE60) else Color(0xFFEB5757),
-                    style = MaterialTheme.typography.labelLarge
-                )
+                    style = MaterialTheme.typography.bodyMedium)
+
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = if (match.win) "ПОБЕДА" else "ПОРАЖЕНИЕ",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge)
+
         }
     }
 }
 
+@Composable
+private fun LoadingScreen() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ErrorScreen(error: String, onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(error, color = MaterialTheme.colorScheme.error)
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onBack) {
+            Text("Повторить попытку")
+        }
+    }
+}
