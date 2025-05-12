@@ -39,3 +39,25 @@ data class DDragonChampion(
     val name: String,
     val id: String
 )
+
+data class MatchDetailsResponse(
+    val info: MatchInfo,
+    val metadata: MatchMetadata
+)
+
+data class MatchInfo(
+    val participants: List<Participant>
+)
+
+data class MatchMetadata(
+    val matchId: String
+)
+
+data class Participant(
+    val puuid: String,
+    val championId: Long,
+    val kills: Int,
+    val deaths: Int,
+    val assists: Int,
+    val win: Boolean
+)
