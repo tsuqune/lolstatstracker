@@ -81,6 +81,12 @@ interface RiotApiService {
         @Header("X-Riot-Token") apiKey: String
     ): List<String>
 
+    @GET("lol/match/v5/matches/{matchId}")
+    suspend fun getMatchDetails(
+        @Path("matchId") matchId: String,
+        @Header("X-Riot-Token") apiKey: String
+    ): MatchDetailsResponse
+
     companion object {
         val accountInstance: RiotApiService by lazy {
             accountRetrofit.create(RiotApiService::class.java)
