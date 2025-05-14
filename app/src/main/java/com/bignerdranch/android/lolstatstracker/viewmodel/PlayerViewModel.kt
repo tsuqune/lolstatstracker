@@ -5,12 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bignerdranch.android.lolstatstracker.repository.ChampionRepository
 import com.bignerdranch.android.lolstatstracker.Constants
+import com.bignerdranch.android.lolstatstracker.Screen
 import com.bignerdranch.android.lolstatstracker.model.*
 import com.bignerdranch.android.lolstatstracker.network.RiotApiService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
@@ -27,6 +29,22 @@ class PlayerViewModel : ViewModel() {
 
     private val _matches = MutableStateFlow<List<MatchData>>(emptyList())
     val matches: StateFlow<List<MatchData>> = _matches
+
+    private val _currentScreen = MutableStateFlow<Screen>(Screen.Input)
+    val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
+
+    fun navigateTo(screen: Screen) {
+        _currentScreen.value = screen
+    }
+
+    fun resetNavigation() {
+        _currentScreen.value = Screen.Input
+    }
+
+    fun clearData() {
+        _playerData.value = null
+        _matches.value = emptyList()
+    }
 
     fun fetchPlayerData(gameName: String, tagLine: String) {
         viewModelScope.launch {
