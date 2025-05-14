@@ -167,8 +167,7 @@ private fun RankSection(playerData: PlayerData) {
 
 @Composable
 private fun ChampionMasterySection(champions: List<ChampionMastery>) {
-
-    StatsCard{
+    StatsCard {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -180,24 +179,27 @@ private fun ChampionMasterySection(champions: List<ChampionMastery>) {
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 champions.take(3).forEach { champion ->
-                    ChampionItem(champion)
+                    ChampionItem(
+                        champion = champion,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
         }
     }
-
 }
 
 @Composable
-private fun ChampionItem(champion: ChampionMastery) {
-
-
+private fun ChampionItem(
+    champion: ChampionMastery,
+    modifier: Modifier = Modifier
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(100.dp)
+        modifier = modifier
     ) {
         AsyncImage(
             model = "${Constants.DDRAGON_BASE_URL}img/champion/${champion.championName?.replace(" ", "")}.png",
@@ -221,7 +223,7 @@ private fun ChampionItem(champion: ChampionMastery) {
 @Composable
 fun StatsCard(
     modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit // Позволяет использовать Column внутри
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
