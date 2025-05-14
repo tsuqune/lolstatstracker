@@ -3,7 +3,7 @@ package com.bignerdranch.android.lolstatstracker.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,7 +37,7 @@ fun MainScreen(
                 actions = {
                     IconButton(onClick = onLogout) {
                         Icon(
-                            Icons.Default.ExitToApp,
+                            Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Выйти",
                             tint = MaterialTheme.colorScheme.onSurface
                         )
@@ -51,8 +51,8 @@ fun MainScreen(
             playerData != null -> MainContent(
                 playerData = playerData!!,
                 onLastGamesClick = onLastGamesClick,
-                onLogout = onLogout,
-                modifier = Modifier.padding(padding))
+                modifier = Modifier.padding(padding)
+            )
         }
     }
 }
@@ -61,7 +61,6 @@ fun MainScreen(
 private fun MainContent(
     playerData: PlayerData,
     onLastGamesClick: () -> Unit,
-    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {

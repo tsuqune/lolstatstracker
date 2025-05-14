@@ -51,8 +51,8 @@ android {
 
 dependencies {
 // Jetpack Compose
-    implementation("androidx.activity:activity-compose:1.8.0")
-    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation(libs.androidx.activity.compose.v180)
+    implementation(libs.material3)
 
     // Существующие зависимости
     implementation(libs.androidx.core.ktx)
@@ -65,16 +65,16 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // Новые зависимости для сети
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 
     // Для изображений
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Тестирование (оставляем как есть)
     testImplementation(libs.junit)

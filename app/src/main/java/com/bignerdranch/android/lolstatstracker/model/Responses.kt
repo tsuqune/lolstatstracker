@@ -1,6 +1,5 @@
 package com.bignerdranch.android.lolstatstracker.model
 
-import com.google.gson.annotations.SerializedName
 
 data class RiotAccountResponse(
     val puuid: String,

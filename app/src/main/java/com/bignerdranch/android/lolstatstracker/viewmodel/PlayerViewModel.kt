@@ -3,7 +3,7 @@ package com.bignerdranch.android.lolstatstracker.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bignerdranch.android.lolstatstracker.ChampionRepository
+import com.bignerdranch.android.lolstatstracker.repository.ChampionRepository
 import com.bignerdranch.android.lolstatstracker.Constants
 import com.bignerdranch.android.lolstatstracker.model.*
 import com.bignerdranch.android.lolstatstracker.network.RiotApiService
@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
-import java.util.Date
 
 private const val TAG = "PlayerViewModel"
 
@@ -25,7 +24,6 @@ class PlayerViewModel : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
 
     private val _matches = MutableStateFlow<List<MatchData>>(emptyList())
     val matches: StateFlow<List<MatchData>> = _matches
