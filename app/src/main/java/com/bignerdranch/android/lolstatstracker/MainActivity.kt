@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bignerdranch.android.lolstatstracker.screens.InputScreen
 import com.bignerdranch.android.lolstatstracker.screens.MainScreen
@@ -18,26 +19,29 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             LolstatstrackerTheme {
-                var currentScreen by remember { mutableStateOf<Screen>(Screen.Input) }
                 val viewModel: PlayerViewModel = viewModel()
+                val currentScreen by viewModel.currentScreen.collectAsStateWithLifecycle()
 
                 when (currentScreen) {
                     Screen.Input -> InputScreen(
+                        viewModel = viewModel, // Передаем ViewModel в InputScreen
                         onSearch = { gameName, tagLine ->
                             viewModel.fetchPlayerData(gameName, tagLine)
-                            currentScreen = Screen.Main
                         }
                     )
 
                     Screen.Main -> MainScreen(
                         viewModel = viewModel,
-                        onLastGamesClick = { currentScreen = Screen.LastGames },
-                        onLogout = { currentScreen = Screen.Input }
+                        onLastGamesClick = { viewModel.navigateTo(Screen.LastGames) },
+                        onLogout = {
+                            viewModel.resetNavigation()
+                            viewModel.clearData()
+                        }
                     )
 
                     Screen.LastGames -> LastGamesScreen(
                         matches = viewModel.matches.value,
-                        onBack = { currentScreen = Screen.Main }
+                        onBack = { viewModel.navigateTo(Screen.Main) }
                     )
                 }
             }

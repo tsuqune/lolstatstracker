@@ -7,9 +7,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.bignerdranch.android.lolstatstracker.Screen
+import com.bignerdranch.android.lolstatstracker.viewmodel.PlayerViewModel
 
 @Composable
 fun InputScreen(
+    viewModel: PlayerViewModel, // Добавляем параметр
     onSearch: (String, String) -> Unit
 ) {
     var gameName by remember { mutableStateOf("") }
@@ -68,7 +71,8 @@ fun InputScreen(
 
             // Кнопка в стиле MainScreen
             Button(
-                onClick = { onSearch(gameName, tagLine) },
+                onClick = { onSearch(gameName, tagLine)
+                    viewModel.navigateTo(Screen.Main)},
                 modifier = Modifier.fillMaxWidth(),
                 enabled = gameName.isNotBlank() && tagLine.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
