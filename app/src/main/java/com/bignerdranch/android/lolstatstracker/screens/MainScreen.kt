@@ -63,12 +63,11 @@ private fun MainContent(
     onLastGamesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        // Header
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
-        ){
+    Column(
+        modifier = modifier.fillMaxSize()
+            .padding(16.dp)
+    ){
+        StatsCard{
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .padding(16.dp),
@@ -128,10 +127,7 @@ private fun MainContent(
 
 @Composable
 private fun RankSection(playerData: PlayerData) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
-    ) {
+    StatsCard{
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -172,10 +168,7 @@ private fun RankSection(playerData: PlayerData) {
 @Composable
 private fun ChampionMasterySection(champions: List<ChampionMastery>) {
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)
-    ){
+    StatsCard{
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
@@ -221,6 +214,25 @@ private fun ChampionItem(champion: ChampionMastery) {
         Text(
             text = "Ур. ${champion.championLevel}",
             fontSize = 10.sp
+        )
+    }
+}
+
+@Composable
+fun StatsCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit // Позволяет использовать Column внутри
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        ),
+        shape = MaterialTheme.shapes.medium // Используем тему для формы
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            content = content
         )
     }
 }

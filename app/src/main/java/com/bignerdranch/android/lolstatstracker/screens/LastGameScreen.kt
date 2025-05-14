@@ -20,6 +20,8 @@ import coil.compose.AsyncImage
 import com.bignerdranch.android.lolstatstracker.repository.ChampionRepository
 import com.bignerdranch.android.lolstatstracker.Constants
 import com.bignerdranch.android.lolstatstracker.model.MatchData
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +66,9 @@ private fun MatchItem(match: MatchData) {
     var championName by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(match.championId) {
-        championName = ChampionRepository.getChampionName(match.championId)
+        championName = withContext(Dispatchers.IO) {
+            ChampionRepository.getChampionName(match.championId)
+        }
     }
 
     Card(
@@ -78,7 +82,7 @@ private fun MatchItem(match: MatchData) {
             AsyncImage(
                 model = "${Constants.DDRAGON_BASE_URL}img/champion/${championName?.replace(" ", "")}.png",
                 contentDescription = "Чемпион",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
 
             Spacer(modifier = Modifier.width(16.dp))
