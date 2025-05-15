@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
 
                 when (currentScreen) {
                     Screen.Input -> InputScreen(
-                        viewModel = viewModel, // Передаем ViewModel в InputScreen
+                        viewModel = viewModel,
                         onSearch = { gameName, tagLine ->
                             viewModel.fetchPlayerData(gameName, tagLine)
                         }

@@ -230,7 +230,7 @@ fun StatsCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
         ),
-        shape = MaterialTheme.shapes.medium // Используем тему для формы
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
