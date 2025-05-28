@@ -10,6 +10,7 @@ data class PlayerData(
     val wins: Int?,
     val losses: Int?,
     val winRate: Double?,
-    val topChampions: List<ChampionMastery>
+    val topChampions: List<ChampionMastery>,
+    val matches: List<MatchData> = emptyList()
 )
 
