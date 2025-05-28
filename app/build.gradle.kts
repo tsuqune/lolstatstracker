@@ -52,25 +52,16 @@ android {
 }
 
 dependencies {
-
     implementation(libs.hilt.android)
-
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.compiler)
-
-    // Glide (добавляем implementation + kapt)
     implementation(libs.glide)
     kapt(libs.compiler)
-
-    // Kotlin Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
-    
     implementation(libs.androidx.activity.compose.v180)
     implementation(libs.material3)
-
-    // Существующие зависимости
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -79,20 +70,12 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-
-    // Новые зависимости для сети
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.logging.interceptor)
-
-    // Для изображений
     implementation(libs.coil.compose)
-
-    // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
-
-    // Тестирование (оставляем как есть)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
