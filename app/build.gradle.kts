@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.android)
+    id("kotlin-kapt")
 }
 
 android {
@@ -50,7 +52,21 @@ android {
 }
 
 dependencies {
-// Jetpack Compose
+
+    implementation(libs.hilt.android)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    kapt(libs.androidx.room.compiler)
+
+    // Glide (добавляем implementation + kapt)
+    implementation(libs.glide)
+    kapt(libs.compiler)
+
+    // Kotlin Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+    
     implementation(libs.androidx.activity.compose.v180)
     implementation(libs.material3)
 
@@ -85,3 +101,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
