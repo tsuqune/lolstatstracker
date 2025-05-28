@@ -1,5 +1,8 @@
 package com.bignerdranch.android.lolstatstracker.viewmodel
 
+import MatchEntity
+import PlayerEntity
+import PlayerRepository
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,9 +19,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.UnknownHostException
 
+
 private const val TAG = "PlayerViewModel"
 
-class PlayerViewModel : ViewModel() {
+class PlayerViewModel(
+    private val repository: PlayerRepository
+) : ViewModel() {
     private val _playerData = MutableStateFlow<PlayerData?>(null)
     val playerData: StateFlow<PlayerData?> = _playerData
 
@@ -46,6 +52,8 @@ class PlayerViewModel : ViewModel() {
         _matches.value = emptyList()
     }
 
+    private var cachedPuuid: String? = null
+
     fun fetchPlayerData(gameName: String, tagLine: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -66,6 +74,14 @@ class PlayerViewModel : ViewModel() {
                 val summoner = RiotApiService.regionalInstance.getSummonerByPuuid(
                     account.puuid, Constants.RIOT_API_KEY
                 ).also { logSummonerResponse(it) }
+
+                cachedPuuid = account.puuid
+                val cachedPlayer = repository.getCachedPlayer(account.puuid)
+                val cachedMatches = repository.getCachedMatches(account.puuid)
+
+                if (cachedPlayer != null && cachedMatches.isNotEmpty()) {
+                    _playerData.value = mapToPlayerData(cachedPlayer, cachedMatches)
+                }
 
                 // Шаг 3: Получение ранговой статистики
                 Log.d(TAG, "Step 3: Fetching league entries...")
@@ -133,6 +149,37 @@ class PlayerViewModel : ViewModel() {
                 _playerData.value = processedData
                 Log.d(TAG, "All data fetched successfully")
 
+                val playerEntity = PlayerEntity(
+                    puuid = account.puuid,
+                    gameName = account.gameName,
+                    tagLine = account.tagLine,
+                    summonerName = "",
+                    summonerLevel = summoner.summonerLevel,
+                    profileIconId = summoner.profileIconId,
+                    rank = soloQueue?.rank,
+                    tier = soloQueue?.tier,
+                    leaguePoints = soloQueue?.leaguePoints,
+                    wins = soloQueue?.wins,
+                    losses = soloQueue?.losses,
+                    winRate = soloQueue?.let {
+                        (it.wins.toDouble() / (it.wins + it.losses)) * 100
+                    }
+                )
+
+                val matchEntities = matches.map { match ->
+                    MatchEntity(
+                        matchId = match.matchId,
+                        playerPuuid = account.puuid,
+                        championId = match.championId,
+                        kills = match.kills,
+                        deaths = match.deaths,
+                        assists = match.assists,
+                        win = match.win
+                    )
+                }
+
+                repository.savePlayerData(playerEntity, matchEntities)
+
             } catch (e: UnknownHostException) {
                 handleError("No internet connection", e)
             } catch (e: Exception) {
@@ -152,6 +199,36 @@ class PlayerViewModel : ViewModel() {
             }
         }
     }
+
+    private fun mapToPlayerData(
+        player: PlayerEntity,
+        matches: List<MatchEntity>
+    ): PlayerData {
+        return PlayerData(
+            summonerName = player.summonerName,
+            summonerLevel = player.summonerLevel,
+            profileIconId = player.profileIconId,
+            rank = player.rank,
+            tier = player.tier,
+            leaguePoints = player.leaguePoints,
+            wins = player.wins,
+            losses = player.losses,
+            winRate = player.winRate,
+            topChampions = playerData.value?.topChampions ?: emptyList(),
+            matches = matches.map { match ->
+                MatchData(
+                    matchId = match.matchId,
+                    championId = match.championId,
+                    kills = match.kills,
+                    deaths = match.deaths,
+                    assists = match.assists,
+                    win = match.win
+                )
+            }
+        )
+    }
+
+
 
     private fun logMatchIds(ids: List<String>) {
         Log.d(TAG, "Retrieved ${ids.size} ranked match IDs:")
